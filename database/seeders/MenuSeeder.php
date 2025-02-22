@@ -152,6 +152,35 @@ class MenuSeeder extends Seeder
                     ],
                 ],
             ],
+            [
+                'name' => 'Department Management',
+                'icon' => 'aperture',
+                'route' => null,
+                'description' => null,
+                'sorting' => 6,
+                'permission_name' => 'user-management',
+                'status' => 'Active',
+                'children' => [
+                    [
+                        'name' => 'Department',
+                        'icon' => 'plus-circle',
+                        'route' => 'backend.department.create',
+                        'description' => null,
+                        'sorting' => 1,
+                        'permission_name' => 'department-add',
+                        'status' => 'Active',
+                    ],
+                    [
+                        'name' => 'Department List',
+                        'icon' => 'list',
+                        'route' => 'backend.department.index',
+                        'description' => null,
+                        'sorting' => 2,
+                        'permission_name' => 'department-list',
+                        'status' => 'Active',
+                    ],
+                ],
+            ],
 
 
     //don't remove this comment from menu seeder
