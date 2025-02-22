@@ -3,6 +3,7 @@
 use App\Http\Controllers\Backend\AdminController;
 use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\Backend\DepartmentController;
+use App\Http\Controllers\Backend\DesignationController;
 use App\Http\Controllers\Backend\ModuleMakerController;
 use App\Http\Controllers\Backend\PermissionController;
 use App\Http\Controllers\Backend\RoleController;
@@ -62,6 +63,9 @@ Route::group(['middleware' => 'AdminAuth'], function () {
 
     Route::resource('department', DepartmentController::class);
     Route::get('department/{id}/status/{status}/change', [DepartmentController::class, 'changeStatus'])->name('department.status.change');
+
+    Route::resource('designation', DesignationController::class);
+	Route::get('designation/{id}/status/{status}/change', [DesignationController::class, 'changeStatus'])->name('designation.status.change');
 
 	//don't remove this comment from route body
 });
