@@ -1,0 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+.sweet-alert {
+    @apply bg-white p-4 rounded-lg shadow-lg;
+  }
+ 
