@@ -67,7 +67,7 @@ class MenuSeeder extends Seeder
             ],
             [
                 'name' => 'User Manage',
-                'icon' => 'list',
+                'icon' => 'user',
                 'route' => null,
                 'description' => null,
                 'sorting' => 1,

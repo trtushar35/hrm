@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->string('password')->nullable();
             $table->unsignedBigInteger('role_id')->nullable();
+            $table->decimal('salary', 11,2)->nullable();
             $table->string('photo')->nullable();
             $table->string('address',2000)->nullable();
             $table->integer('sorting')->default(1);
@@ -30,6 +31,10 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
             $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
+            $table->unsignedBigInteger('department_id')->nullable();
+            $table->foreign('department_id')->references('id')->on('departments')->onDelete('cascade');
+            $table->unsignedBigInteger('designation_id')->nullable();
+            $table->foreign('designation_id')->references('id')->on('designations')->onDelete('cascade');
          
         });
     }

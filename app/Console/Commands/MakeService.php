@@ -6,19 +6,35 @@ use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
+use Str;
 
 class MakeService extends Command
 {
-    protected $signature = 'create:crud {controller} {model} {table}';
-    protected $description = 'Create a new service and model file';
+    // protected $signature = 'create:crud {controller} {model} {table}';
+    // protected $description = 'Create a new service and model file';
+
+    protected $signature = 'make:dynamic {name} {--m : model} {--c : controller} {--r : request} {--s : service} {--v : view} {--se : seeder} {--f : factory}';
+    protected $description = 'Create dynamic resources: model, controller, request, service, view, seeder, factory';
 
     public function handle()
     {
-        $controller = $this->argument('controller');
-        $model = $this->argument('model');
-        $table = $this->argument('table');
-        $service = $model . 'Service';
+        // $controller = $this->argument('controller');
+        // $model = $this->argument('model');
+        // $table = $this->argument('table');
+        // $service = $model . 'Service';
 
+        $name = $this->argument('name');
+        $model = $name;
+        $controller = $model . 'Controller';
+        $service = $model . 'Service';
+        $lowercaseName = strtolower($name);
+        $table = Str::snake(Str::plural($lowercaseName));
+
+        //Table
+        $timestamp = date('Y_m_d_His');
+        $tablePath = database_path('migrations/' . $timestamp . '_create_' . $table . '_table.php');
+        $tableCode = $this->generateTable($model, $table);
+        $this->createFile($tablePath, $tableCode);
 
         // Request
         $requestPath = app_path('Http/Requests/' . $model . 'Request.php');
@@ -42,18 +58,77 @@ class MakeService extends Command
 
         // View
         $backendPath = resource_path('js/Pages/Backend/');
+        $formFile = $backendPath . $model . '/Form.vue';
         $indexFile = $backendPath . $model . '/Index.vue';
 
+        //Route
+        $routePath = base_path('routes');
+        $routeFile = $routePath . '/backend.php';
+        $routeFiles = $routePath . '/backend.php';
+
+        $generatedNamespace = $this->generateRouteName($model, $table);
+
+
+        $existingRoute = File::get($routeFiles);
+        $insertMarkerUper = "//don't remove this comment from route namespace";
+
+        if (str_contains($existingRoute, $insertMarkerUper)) {
+            $newContent = str_replace($insertMarkerUper, "$generatedNamespace\n\n\t$insertMarkerUper", $existingRoute);
+            File::put($routeFiles, $newContent);
+            echo "Routes Namespace added successfully to backend.php file.\n";
+        } else {
+            echo "Marker for insertion not found in backend.php file.\n";
+        }
+
+        $generatedCode = $this->generateRouteCode($model, $table);
+
+        $existingRoutes = File::get($routeFile);
+        $insertMarker = "//don't remove this comment from route body";
+
+        if (str_contains($existingRoutes, $insertMarker)) {
+            $newContent = str_replace($insertMarker, "$generatedCode\n\n\t$insertMarker", $existingRoutes);
+            File::put($routeFile, $newContent);
+            echo "Routes added successfully to backend.php file.\n";
+        } else {
+            echo "Marker for insertion not found in backend.php file.\n";
+        }
+
+        //Add Menu Seeder
+        $menuPath = database_path('seeders');
+        $menuFile = $menuPath . '/MenuSeeder.php';
+
+        $generateMenuCode = $this->generateMenuCode($model, $table);
+
+        $existingMenus = File::get($menuFile);
+
+        $insertMarkers = "//don't remove this comment from menu seeder";
+
+        if (str_contains($existingMenus, $insertMarkers)) {
+            $newContents = str_replace($insertMarkers, "$generateMenuCode\n\n\t$insertMarkers", $existingMenus);
+            File::put($menuFile, $newContents);
+            echo "Menu added successfully to MenuSeeder.php file.\n";
+        } else {
+            echo "Marker for insertion not found in MenuSeeder.php file.\n";
+        }
 
         // Check if directory exists, if not create it
         if (!File::isDirectory($backendPath . $model)) {
             File::makeDirectory($backendPath . $model, 0755, true, true);
         }
 
+
+        if (File::exists($formFile)) {
+            $this->error('Create file already exists at:' . $formFile);
+            return;
+        }
+
         if (File::exists($indexFile)) {
             $this->error('Index file already exists at:' . $indexFile);
             return;
         }
+
+        File::put($formFile, $this->FormVue($model));
+        $this->info('Form created successfully:' . $formFile);
 
         File::put($indexFile, $this->IndexVue($model));
         $this->info('Index created successfully:' . $indexFile);
@@ -72,21 +147,86 @@ class MakeService extends Command
         $this->info('File created successfully: ' . $filePath);
     }
 
+    function generateRouteName($model, $table)
+    {
+        $code = <<<EOT
+        use App\Http\Controllers\Backend\\{$model}Controller;
+
+        EOT;
+        return $code;
+    }
+
+    function generateRouteCode($model, $table)
+    {
+        $lowercaseModel = strtolower($model);
+        $code = <<<EOT
+            //for $model
+            Route::resource('$lowercaseModel', {$model}Controller::class);
+            Route::get('$lowercaseModel/{id}/status/{status}/change', [{$model}Controller::class, 'changeStatus'])->name('$lowercaseModel.status.change');
+
+        EOT;
+        return $code;
+    }
+
+    function generateMenuCode($model, $table)
+    {
+        $lowercaseModel = strtolower($model);
+        $code = <<<EOT
+            [
+                'name' => '$model Manage',
+                'icon' => 'layers',
+                'route' => null,
+                'description' => null,
+                'sorting' => 1,
+                'permission_name' => '$lowercaseModel-management',
+                'status' => 'Active',
+                'children' => [
+                    [
+                        'name' => '$model Add',
+                        'icon' => 'plus-circle',
+                        'route' => 'backend.$lowercaseModel.create',
+                        'description' => null,
+                        'sorting' => 1,
+                        'permission_name' => '$lowercaseModel-add',
+                        'status' => 'Active',
+                    ],
+                    [
+                        'name' => '$model List',
+                        'icon' => 'list',
+                        'route' => 'backend.$lowercaseModel.index',
+                        'description' => null,
+                        'sorting' => 1,
+                        'permission_name' => '$lowercaseModel-list',
+                        'status' => 'Active',
+                    ],
+                ],
+            ],
+
+        EOT;
+        return $code;
+    }
 
     function generateModelCode($model, $table)
     {
         $code = <<<EOT
         <?php
         namespace App\Models;
-
+        use Illuminate\Contracts\Auth\MustVerifyEmail;
         use Illuminate\Database\Eloquent\Factories\HasFactory;
-        use Illuminate\Database\Eloquent\Model;
-        use Illuminate\Database\Eloquent\SoftDeletes;
+        use Illuminate\Foundation\Auth\User as Authenticatable;
+        use Illuminate\Notifications\Notifiable;
+        use Illuminate\Support\Facades\Hash;
+        use Spatie\Permission\Traits\HasRoles;
 
-        class $model extends Model
+        class $model extends Authenticatable
         {
-            use HasFactory, SoftDeletes;
+            use Notifiable,HasFactory;
 
+            protected \$table = '$table';
+
+            protected \$fillable = [
+                            'name',
+                        ];
 
             protected static function boot()
             {
@@ -116,6 +256,46 @@ class MakeService extends Command
         return $code;
     }
 
+    function generateTable($model, $table)
+    {
+        $code = <<<EOT
+          <?php
+
+            use Illuminate\Database\Migrations\Migration;
+            use Illuminate\Database\Schema\Blueprint;
+            use Illuminate\Support\Facades\Schema;
+
+            return new class extends Migration
+            {
+                /**
+                 * Run the migrations.
+                 *
+                 * @return void
+                 */
+                public function up()
+                {
+                    Schema::create('$table', function (Blueprint \$table) {
+                        \$table->id();
+                        \$table->enum('status',['Active','Inactive','Deleted'])->default('Active');
+                        \$table->softDeletes();
+                        \$table->timestamps();
+                    });
+                }
+
+                /**
+                 * Reverse the migrations.
+                 *
+                 * @return void
+                 */
+                public function down()
+                {
+                    Schema::dropIfExists('$table');
+                }
+            };
+
+        EOT;
+        return $code;
+    }
 
     function generateRequest($model, $table)
     {
@@ -123,38 +303,55 @@ class MakeService extends Command
         $code = <<<EOT
         <?php
 
-            namespace App\Http\Requests;
+        namespace App\Http\Requests;
 
-            use Illuminate\Foundation\Http\FormRequest;
+        use Illuminate\Foundation\Http\FormRequest;
 
-            class {$model}Request extends FormRequest
+        class {$model}Request extends FormRequest
+        {
+         public function rules()
             {
+                switch (\$this->method()) {
+                    case 'POST':
+                        return [
+                            'name' => 'required|string|max:255',
+                            'email' => 'required|email|unique:admins,email|max:255',
+                            'photo' => 'file|mimes:png,jpg,jpeg|max:25048',
+                        ];
+                        break;
 
-                /**
-                 * Get the validation rules that apply to the request.
-                 *
-                 * @return array<string, mixed>
-                 */
-                public function rules()
-                {
-                    switch (\$this->method()) {
-                        case 'POST':
-                            return [
+                    case 'PUT':
+                        return [
+                            'name' => 'required|string|max:255',
+                            'email' => 'required|email|max:255|unique:admins,id,' . \$this->id,
+                            'photo' => 'nullable|file|mimes:png,jpg,jpeg|max:25048',
+                        ];
+                        break;
+                    case 'PATCH':
 
-
-                            ];
-                            break;
-                    }
-                }
-
-                public function messages()
-                {
-                    return [
-
-                    ];
+                        break;
                 }
             }
 
+            /**
+             * Get custom error messages for validator errors.
+             *
+             * @return array<string, mixed>
+             */
+            public function messages()
+            {
+
+                return [
+                    'name.required' => __('The first name field is required.'),
+                    'email.required' => __('The email field is required.'),
+                    'email.email' => __('Please enter a valid email address.'),
+                    'email.unique' => __('This email address is already taken.'),
+                    'photo.file' => __('The photo must be a file.'),
+                    'photo.mimes' => __('The photo must be a file of type: png, jpg, jpeg.'),
+                    'photo.max' => __('The photo may not be greater than :max kilobytes.'),
+                ];
+            }
+        }
         EOT;
 
         return $code;
@@ -163,6 +360,7 @@ class MakeService extends Command
     function generateServiceCode($model)
     {
 
+        $lowercaseModel = strtolower($model);
         $code = <<<EOT
         <?php
         namespace App\Services;
@@ -172,34 +370,34 @@ class MakeService extends Command
         {
             protected \$${model}Model;
 
-            public function __construct($model \$${model}Model)
+            public function __construct($model \$${lowercaseModel}Model)
             {
-                \$this->${model}Model = \$${model}Model;
+                \$this->${lowercaseModel}Model = \$${lowercaseModel}Model;
             }
 
             public function list()
             {
-                return  \$this->${model}Model->whereNull('deleted_at');
+                return  \$this->${lowercaseModel}Model->whereNull('deleted_at');
             }
 
             public function all()
             {
-                return  \$this->${model}Model->whereNull('deleted_at')->all();
+                return  \$this->${lowercaseModel}Model->whereNull('deleted_at')->all();
             }
 
             public function find(\$id)
             {
-                return  \$this->${model}Model->find(\$id);
+                return  \$this->${lowercaseModel}Model->find(\$id);
             }
 
             public function create(array \$data)
             {
-                return  \$this->${model}Model->create(\$data);
+                return  \$this->${lowercaseModel}Model->create(\$data);
             }
 
             public function update(array \$data, \$id)
             {
-                \$dataInfo =  \$this->${model}Model->findOrFail(\$id);
+                \$dataInfo =  \$this->${lowercaseModel}Model->findOrFail(\$id);
 
                 \$dataInfo->update(\$data);
 
@@ -208,7 +406,7 @@ class MakeService extends Command
 
             public function delete(\$id)
             {
-                \$dataInfo =  \$this->${model}Model->find(\$id);
+                \$dataInfo =  \$this->${lowercaseModel}Model->find(\$id);
 
                 if (!empty(\$dataInfo)) {
 
@@ -223,7 +421,7 @@ class MakeService extends Command
 
             public function changeStatus(\$id,\$status)
             {
-                \$dataInfo =  \$this->${model}Model->findOrFail(\$id);
+                \$dataInfo =  \$this->${lowercaseModel}Model->findOrFail(\$id);
                 \$dataInfo->status = \$status;
                 \$dataInfo->update();
 
@@ -232,7 +430,7 @@ class MakeService extends Command
 
             public function AdminExists(\$userName)
             {
-                return  \$this->${model}Model->whereNull('deleted_at')
+                return  \$this->${lowercaseModel}Model->whereNull('deleted_at')
                     ->where(function (\$q) use (\$userName) {
                         \$q->where('email', strtolower(\$userName))
                             ->orWhere('phone', \$userName);
@@ -243,7 +441,7 @@ class MakeService extends Command
 
             public function activeList()
             {
-                return  \$this->${model}Model->whereNull('deleted_at')->where('status', 'Active')->get();
+                return  \$this->${lowercaseModel}Model->whereNull('deleted_at')->where('status', 'Active')->get();
             }
 
         }
@@ -259,7 +457,8 @@ class MakeService extends Command
 
 
         $lowercaseModel = strtolower($model);
-        $service = $model . 'Service';
+        $services = $model . 'Service';
+        $service = $lowercaseModel . 'Service';
         $code = <<<EOT
         <?php
         namespace App\Http\Controllers\Backend;
@@ -281,7 +480,7 @@ class MakeService extends Command
 
             protected \$$service;
 
-            public function __construct($service \$$service)
+            public function __construct($services \$$service)
             {
                 \$this->$service = \$$service;
             }
@@ -305,6 +504,67 @@ class MakeService extends Command
                 );
             }
 
+            private function getDatas()
+            {
+                \$query = \$this->{$service}->list();
+
+                if (request()->filled('name'))
+                    \$query->where('name', 'like', request()->name . '%');
+
+
+                \$datas = \$query->paginate(request()->numOfData ?? 10)->withQueryString();
+
+                \$formatedDatas = \$datas->map(function (\$data, \$index) {
+                    \$customData = new \stdClass();
+                    \$customData->index = \$index + 1;
+                    \$customData->name = \$data->name;
+                    \$customData->photo = '<img src="' . \$data->photo . '" height="50" width="50"/>';
+                    \$customData->status = getStatusText(\$data->status);
+
+                    \$customData->hasLink = true;
+                    \$customData->links = [
+                        [
+                            'linkClass' => 'semi-bold text-white statusChange ' . ((\$data->status == 'Active') ? "bg-gray-500" : "bg-green-500"),
+                            'link' => route('backend.$lowercaseModel.status.change', ['id' => \$data->id, 'status' => \$data->status == 'Active' ? 'Inactive' : 'Active']),
+                            'linkLabel' => getLinkLabel(((\$data->status == 'Active') ? "Inactive" : "Active"), null, null)
+                        ],
+                        [
+                            'linkClass' => 'bg-yellow-400 text-black semi-bold',
+                            'link' => route('backend.$lowercaseModel.edit',  \$data->id),
+                            'linkLabel' => getLinkLabel('Edit', null, null)
+                        ],
+                        [
+                            'linkClass' => 'deleteButton bg-red-500 text-white semi-bold',
+                            'link' => route('backend.$lowercaseModel.destroy', \$data->id),
+                            'linkLabel' => getLinkLabel('Delete', null, null)
+                        ]
+
+                    ];
+                    return \$customData;
+                });
+
+                return regeneratePagination(\$formatedDatas, \$datas->total(), \$datas->perPage(), \$datas->currentPage());
+            }
+
+            private function dataFields()
+            {
+                return [
+                    ['fieldName' => 'index', 'class' => 'text-center'],
+                    ['fieldName' => 'photo', 'class' => 'text-center'],
+                    ['fieldName' => 'name', 'class' => 'text-center'],
+                    ['fieldName' => 'status', 'class' => 'text-center'],
+                ];
+            }
+            private function getTableHeaders()
+            {
+                return [
+                    'Sl/No',
+                    'Photo',
+                    'Name',
+                    'Status',
+                    'Action',
+                ];
+            }
 
             public function create()
             {
@@ -359,7 +619,7 @@ class MakeService extends Command
                     //   dd(\$err);
                     DB::rollBack();
                     \$this->storeSystemError('Backend', '$controller', 'store', substr(\$err->getMessage(), 0, 1000));
-                    dd(\$err);
+                    //dd(\$err);
                     DB::commit();
                     \$message = "Server Errors Occur. Please Try Again.";
                     // dd(\$message);
@@ -523,6 +783,120 @@ class MakeService extends Command
         return $code;
     }
 
+    function FormVue($model)
+    {
+        $lowercaseModel = strtolower($model);
+        $code = <<<EOT
+
+
+        <script setup>
+            import { ref, onMounted } from 'vue';
+            import BackendLayout from '@/Layouts/BackendLayout.vue';
+            import { router, useForm, usePage } from '@inertiajs/vue3';
+            import InputError from '@/Components/InputError.vue';
+            import InputLabel from '@/Components/InputLabel.vue';
+            import PrimaryButton from '@/Components/PrimaryButton.vue';
+            import AlertMessage from '@/Components/AlertMessage.vue';
+            import { displayResponse, displayWarning } from '@/responseMessage.js';
+
+            const props = defineProps(['$lowercaseModel', 'id']);
+
+            const form = useForm({
+                name: props.$lowercaseModel?.name ?? '',
+                _method: props.$lowercaseModel?.id ? 'put' : 'post',
+            });
+
+            const handlePhotoChange = (event) => {
+                const file = event.target.files[0];
+                form.photo = file;
+
+                // Display photo preview
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    form.photoPreview = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            };
+
+            const submit = () => {
+                const routeName = props.id ? route('backend.$lowercaseModel.update', props.id) : route('backend.$lowercaseModel.store');
+                form.transform(data => ({
+                    ...data,
+                    remember: '',
+                    isDirty: false,
+                })).post(routeName, {
+
+                    onSuccess: (response) => {
+                        if (!props.id)
+                            form.reset();
+                        displayResponse(response);
+                    },
+                    onError: (errorObject) => {
+
+                        displayWarning(errorObject);
+                    },
+                });
+            };
+
+            </script>
+
+            <template>
+                <BackendLayout>
+                    <div
+                        class="w-full mt-3 transition duration-1000 ease-in-out transform bg-white border border-gray-700 rounded-md shadow-lg shadow-gray-800/50 dark:bg-slate-900">
+
+                        <div
+                            class="flex items-center justify-between w-full text-gray-700 bg-gray-100 rounded-md shadow-md dark:bg-gray-800 dark:text-gray-200 shadow-gray-800/50">
+                            <div>
+                                <h1 class="p-4 text-xl font-bold dark:text-white">{{ \$page.props.pageTitle }}</h1>
+                            </div>
+                            <div class="p-4 py-2">
+                            </div>
+                        </div>
+
+                        <form @submit.prevent="submit" class="p-4">
+                            <AlertMessage />
+                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
+
+                                <div class="col-span-1 md:col-span-2">
+                                    <InputLabel for="photo" value="Photo" />
+                                    <div v-if="form.photoPreview">
+                                        <img :src="form.photoPreview" alt="Photo Preview" class="max-w-xs mt-2" height="60"
+                                            width="60" />
+                                    </div>
+                                    <input id="photo" type="file" accept="image/*"
+                                        class="block w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600"
+                                        @change="handlePhotoChange" />
+                                    <InputError class="mt-2" :message="form.errors.photo" />
+                                </div>
+
+                                <div class="col-span-1 md:col-span-1">
+                                    <InputLabel for="first_name" value="First Name" />
+                                    <input id="first_name"
+                                        class="block w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600"
+                                        v-model="form.first_name" type="text" placeholder="First Name" />
+                                    <InputError class="mt-2" :message="form.errors.first_name" />
+                                </div>
+
+                            </div>
+                            <div class="flex items-center justify-end mt-4">
+                                <PrimaryButton type="submit" class="ms-4" :class="{ 'opacity-25': form.processing }"
+                                    :disabled="form.processing">
+                                    {{ ((props.id ?? false) ? 'Update' : 'Create') }}
+                                </PrimaryButton>
+                            </div>
+                        </form>
+
+                    </div>
+                </BackendLayout>
+            </template>
+
+
+        EOT;
+
+        return $code;
+    }
+
     function IndexVue($model)
     {
         $lowercaseModel = strtolower($model);
@@ -600,5 +974,4 @@ class MakeService extends Command
 
         return $code;
     }
-    
 }

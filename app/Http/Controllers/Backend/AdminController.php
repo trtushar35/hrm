@@ -7,6 +7,8 @@ use App\Http\Requests\AdminRequest;
 use App\Http\Requests\UserRequest;
 use Illuminate\Support\Facades\DB;
 use App\Services\AdminService;
+use App\Services\DepartmentService;
+use App\Services\DesignationService;
 use App\Services\RoleService;
 use Inertia\Inertia;
 use App\Traits\SystemTrait;
@@ -16,12 +18,14 @@ class AdminController extends Controller
 {
     use SystemTrait;
 
-    protected $adminService, $roleService;
+    protected $adminService, $roleService, $departmentService, $designationService;
 
-    public function __construct(AdminService $adminService, RoleService $roleService)
+    public function __construct(AdminService $adminService, RoleService $roleService, DepartmentService $departmentService, DesignationService $designationService)
     {
         $this->adminService = $adminService;
         $this->roleService = $roleService;
+        $this->departmentService = $departmentService;
+        $this->designationService = $designationService;
     }
 
     public function index()
@@ -29,16 +33,18 @@ class AdminController extends Controller
         return Inertia::render(
             'Backend/Admin/Index',
             [
-                'pageTitle' => fn () => 'User List',
-                'breadcrumbs' => fn () => [
+                'pageTitle' => fn() => 'User List',
+                'breadcrumbs' => fn() => [
                     ['link' => null, 'title' => 'User Manage'],
                     ['link' => route('backend.admin.index'), 'title' => 'User List'],
                 ],
-                'tableHeaders' => fn () => $this->getTableHeaders(),
-                'dataFields' => fn () => $this->dataFields(),
-                'datas' => fn () => $this->getDatas(),
-                'roles' => fn () => $this->roleService->all(),
+                'tableHeaders' => fn() => $this->getTableHeaders(),
+                'dataFields' => fn() => $this->dataFields(),
+                'datas' => fn() => $this->getDatas(),
+                'roles' => fn() => $this->roleService->all(),
                 'filters' => request()->only(['numOfData', 'name', 'division', 'district', 'upazila', 'union']),
+                'departments' => fn() => $this->departmentService->activeList(),
+                'designations' => fn() => $this->designationService->activeList()
             ]
         );
     }
@@ -61,7 +67,13 @@ class AdminController extends Controller
             $query->where('email', 'like', request()->email . '%');
 
         if (request()->filled('role_id'))
-            $query->where('role', request()->role_id);
+            $query->where('role_id', request()->role_id);
+
+        if (request()->filled('department_id'))
+            $query->where('department_id', request()->department_id);
+
+        if (request()->filled('designation_id'))
+            $query->where('designation_id', request()->designation_id);
 
         $datas = $query->paginate(request()->numOfData ?? 10)->withQueryString();
 
@@ -72,6 +84,9 @@ class AdminController extends Controller
             $customData->email = $data->email;
             $customData->phone = $data->phone;
             $customData->role_name = $data->role?->name;
+            $customData->department_id = $data->department?->name;
+            $customData->designation_id = $data->designation?->name;
+            $customData->salary = $data->salary;
             $customData->photo = '<img src="' . $data->photo . '" height="50" width="50"/>';
             $customData->address = $data->address;
             $customData->status = getStatusText($data->status);
@@ -111,6 +126,9 @@ class AdminController extends Controller
             ['fieldName' => 'phone', 'class' => 'text-center'],
             ['fieldName' => 'address', 'class' => 'text-center'],
             ['fieldName' => 'role_name', 'class' => 'text-center'],
+            ['fieldName' => 'department_id', 'class' => 'text-center'],
+            ['fieldName' => 'designation_id', 'class' => 'text-center'],
+            ['fieldName' => 'salary', 'class' => 'text-center'],
             ['fieldName' => 'status', 'class' => 'text-center'],
         ];
     }
@@ -123,7 +141,10 @@ class AdminController extends Controller
             'Email',
             'Phone',
             'Address',
-            'Role Name',
+            'Role',
+            'Department',
+            'Designation',
+            'Salary',
             'Status',
             'Action',
         ];
@@ -134,12 +155,14 @@ class AdminController extends Controller
         return Inertia::render(
             'Backend/Admin/Form',
             [
-                'pageTitle' => fn () => 'User Create',
-                'breadcrumbs' => fn () => [
+                'pageTitle' => fn() => 'User Create',
+                'breadcrumbs' => fn() => [
                     ['link' => null, 'title' => 'User Manage'],
                     ['link' => route('backend.admin.create'), 'title' => 'User Create'],
                 ],
-                'roles' => fn () => $this->roleService->all(),
+                'roles' => fn() => $this->roleService->all(),
+                'departments' => fn() => $this->departmentService->activeList(),
+                'designations' => fn() => $this->designationService->activeList(),
             ]
         );
     }
@@ -191,14 +214,16 @@ class AdminController extends Controller
         return Inertia::render(
             'Backend/Admin/Form',
             [
-                'pageTitle' => fn () => 'User Edit',
-                'breadcrumbs' => fn () => [
+                'pageTitle' => fn() => 'User Edit',
+                'breadcrumbs' => fn() => [
                     ['link' => null, 'title' => 'User Manage'],
                     ['link' => route('backend.admin.edit', $user->id), 'title' => 'Branch Edit'],
                 ],
-                'user' => fn () => $user,
-                'id' => fn () => $id,
-                'roles' => fn () => $this->roleService->all(),
+                'user' => fn() => $user,
+                'id' => fn() => $id,
+                'roles' => fn() => $this->roleService->all(),
+                'departments' => fn() => $this->departmentService->activeList(),
+                'designations' => fn() => $this->designationService->activeList(),
             ]
         );
     }
@@ -209,6 +234,7 @@ class AdminController extends Controller
         try {
             $admin = $this->adminService->find($id);
             $data = $request->validated();
+
             if ($request->hasFile('photo')) {
                 $data['photo'] = $this->imageUpload($request->file('photo'), 'users');
                 if (isset($admin->photo)) {
@@ -258,7 +284,7 @@ class AdminController extends Controller
         try {
             $dataInfo = $this->adminService->delete($id);
 
-            if ($dataInfo->wasChanged()) {
+            if ($dataInfo) {
                 $message = 'User deleted successfully';
                 $this->storeAdminWorkLog($dataInfo->id, 'admins', $message);
 
@@ -293,7 +319,7 @@ class AdminController extends Controller
         try {
             $dataInfo = $this->adminService->changeStatus(request());
 
-            if ($dataInfo->wasChanged()) {
+            if ($dataInfo) {
                 $message = 'User ' . request()->status . ' Successfully';
                 $this->storeAdminWorkLog($dataInfo->id, 'admins', $message);
 

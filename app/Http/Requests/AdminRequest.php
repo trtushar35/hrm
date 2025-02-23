@@ -19,12 +19,15 @@ class AdminRequest extends FormRequest
                     'first_name' => 'required|string|max:255',
                     'last_name' => 'required|string|max:255',
                     'email' => 'required|email|unique:admins,email|max:255',
-                    'photo' => 'file|mimes:png,jpg,jpeg|max:25048',
+                    'photo' => 'nullable|file|mimes:png,jpg,jpeg|max:25048',
                     'phone' => 'nullable|string|max:20',
                     'role_id' => 'required|exists:roles,id',
                     'password' => 'required|string|min:8',
                     'sorting' => 'nullable|numeric',
                     'address' => 'nullable|string',
+                    'department_id' => 'required',
+                    'designation_id' => 'required',
+                    'salary' => 'required',
                 ];
                 break;
 
@@ -39,6 +42,9 @@ class AdminRequest extends FormRequest
                     'password' => 'nullable|string|min:8',
                     'sorting' => 'nullable|numeric',
                     'address' => 'nullable|string',
+                    'department_id' => 'required',
+                    'designation_id' => 'required',
+                    'salary' => 'required',
                 ];
                 break;
             case 'PATCH':
@@ -69,6 +75,9 @@ class AdminRequest extends FormRequest
             'role_id.exists' => __('Selected role does not exist.'),
             'password.min' => __('The password must be at least :min characters.'),
             'sorting.numeric' => __('The sorting must be a number.'),
+            'department_id.required' => __('The department field is required.'),
+            'designation_id.required' => __('The designation field is required.'),
+            'salary.required' => __('The salary field is required.'),
         ];
     }
 }

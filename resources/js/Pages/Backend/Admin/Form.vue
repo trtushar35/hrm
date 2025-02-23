@@ -8,7 +8,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import AlertMessage from '@/Components/AlertMessage.vue';
 import { displayResponse, displayWarning } from '@/responseMessage.js';
 
-const props = defineProps([ 'user', 'id', 'roles']);
+const props = defineProps(['user', 'id', 'roles', 'departments', 'designations']);
 
 const form = useForm({
     first_name: props.user?.first_name ?? '',
@@ -18,6 +18,9 @@ const form = useForm({
     photoPreview: props.user?.photo ?? '',
     phone: props.user?.phone ?? '',
     role_id: props.user?.role_id ?? '',
+    department_id: props.user?.department_id ?? '',
+    designation_id: props.user?.designation_id ?? '',
+    salary: props.user?.salary ?? '',
     password: '',
 
     address: props.user?.address ?? '',
@@ -113,8 +116,6 @@ const submit = () => {
                         <InputError class="mt-2" :message="form.errors.email" />
                     </div>
 
-
-
                     <div class="col-span-1 md:col-span-1">
                         <InputLabel for="phone" value="Phone" />
                         <input id="phone"
@@ -137,14 +138,46 @@ const submit = () => {
                     </div>
 
                     <div class="col-span-1 md:col-span-1">
+                        <InputLabel for="department_id" value="Department" />
+                        <select id="department_id"
+                            class="block w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600"
+                            v-model="form.department_id" placeholder="Select Department">
+                            <option value="">--Select Department--</option>
+                            <template v-for="data in departments">
+                                <option :value="data.id">{{ data.name }}</option>
+                            </template>
+                        </select>
+                        <InputError class="mt-2" :message="form.errors.department_id" />
+                    </div>
+
+                    <div class="col-span-1 md:col-span-1">
+                        <InputLabel for="designation_id" value="Designation" />
+                        <select id="designation_id"
+                            class="block w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600"
+                            v-model="form.designation_id" placeholder="Select Designation">
+                            <option value="">--Select Designation--</option>
+                            <template v-for="data in designations">
+                                <option :value="data.id">{{ data.name }}</option>
+                            </template>
+                        </select>
+                        <InputError class="mt-2" :message="form.errors.designation_id" />
+                    </div>
+
+                    <div class="col-span-1 md:col-span-1">
+                        <InputLabel for="salary" value="Salary" />
+                        <input id="salary"
+                            class="block w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600"
+                            v-model="form.salary" type="number" placeholder="Salary" />
+                        <InputError class="mt-2" :message="form.errors.salary" />
+                    </div>
+
+                    <div class="col-span-1 md:col-span-1">
                         <InputLabel for="password" value="Password" />
                         <input id="password"
                             class="block w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600"
                             v-model="form.password" type="password" placeholder="Password" />
                         <InputError class="mt-2" :message="form.errors.password" />
                     </div>
-
-
 
                     <div class="col-span-4 md:col-span-4">
                         <InputLabel for="address" value="Address" />

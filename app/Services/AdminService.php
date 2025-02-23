@@ -15,17 +15,17 @@ class AdminService
 
     public function list()
     {
-        return $this->adminModel->whereNull('deleted_at');
+        return $this->adminModel->with('department', 'designation')->whereNull('deleted_at');
     }
 
     public function all()
     {
-        return $this->adminModel->whereNull('deleted_at')->all();
+        return $this->adminModel->with('department', 'designation')->whereNull('deleted_at')->all();
     }
 
     public function find($id)
     {
-        return $this->adminModel->find($id);
+        return $this->adminModel->with('department', 'designation')->find($id);
     }
 
     public function create(array $data)
@@ -46,39 +46,38 @@ class AdminService
     {
         $dataInfo = $this->adminModel->find($id);
 
-        if(!empty($dataInfo)){
 
-            $dataInfo->deleted_at=date('Y-m-d H:i:s');
+        if (!empty($dataInfo)) {
+            $dataInfo->deleted_at = date('Y-m-d H:i:s');
+            $dataInfo->status = 'Deleted';
+            $dataInfo->save();
 
-            $dataInfo->status='Deleted';
-
-            return ($dataInfo->save());
+            return $dataInfo;
         }
-            return false;
+        return false;
     }
 
     public function changeStatus($request)
     {
         $dataInfo = $this->adminModel->findOrFail($request->id);
 
-        $dataInfo->update($request->all());
+        $dataInfo->update(['status' =>$request->status]);
 
         return $dataInfo;
     }
+
     public function AdminExists($userName)
     {
         return $this->adminModel->whereNull('deleted_at')
-                    ->where(function($q) use($userName){
-                        $q->where('email',strtolower($userName))
-                        ->orWhere('phone',$userName);
-                    })->first();
-
+            ->where(function ($q) use ($userName) {
+                $q->where('email', strtolower($userName))
+                    ->orWhere('phone', $userName);
+            })->first();
     }
 
 
     public function activeList()
     {
-        return $this->adminModel->whereNull('deleted_at')->where('status', 'Active')->get();
+        return $this->adminModel->with('department', 'designation')->whereNull('deleted_at')->where('status', 'Active')->get();
     }
-
 }
