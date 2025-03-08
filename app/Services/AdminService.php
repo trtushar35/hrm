@@ -15,17 +15,17 @@ class AdminService
 
     public function list()
     {
-        return $this->adminModel->with('department', 'designation')->whereNull('deleted_at');
+        return $this->adminModel->whereNull('deleted_at');
     }
 
     public function all()
     {
-        return $this->adminModel->with('department', 'designation')->whereNull('deleted_at')->all();
+        return $this->adminModel->whereNull('deleted_at')->all();
     }
 
     public function find($id)
     {
-        return $this->adminModel->with('department', 'designation')->find($id);
+        return $this->adminModel->find($id);
     }
 
     public function create(array $data)
@@ -78,6 +78,6 @@ class AdminService
 
     public function activeList()
     {
-        return $this->adminModel->with('department', 'designation')->whereNull('deleted_at')->where('status', 'Active')->get();
+        return $this->adminModel->whereNull('deleted_at')->where('status', 'Active')->get();
     }
 }

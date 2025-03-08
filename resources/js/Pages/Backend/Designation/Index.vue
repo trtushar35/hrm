@@ -9,7 +9,7 @@ let props = defineProps({
     filters: Object,
 });
 
- const filters = ref({
+const filters = ref({
 
     numOfData: props.filters?.numOfData ?? 10,
 });
@@ -25,7 +25,7 @@ const applyFilter = () => {
 
         <div
             class="w-full p-4 mt-3 duration-1000 ease-in-out bg-white rounded-md shadow-md shadow-gray-800/50 dark:bg-slate-900">
-
+            
             <h1 class="py-2 text-xl font-bold dark:text-white">{{ $page.props.pageTitle }}</h1>
 
             <div
@@ -36,13 +36,13 @@ const applyFilter = () => {
                     <div class="flex space-x-2">
                         <div class="w-full">
                             <input id="title_en" v-model="filters.name"
-                                   class="block w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600"
-                                   type="text" placeholder="Name" @input="applyFilter" />
+                                class="block w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600"
+                                type="text" placeholder="Name" @input="applyFilter" />
                         </div>
 
                         <div class="block min-w-24 md:hidden">
                             <select v-model="filters.numOfData" @change="applyFilter"
-                                    class="w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600">
+                                class="w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600">
                                 <option value="10">Show 10</option>
                                 <option value="20">Show 20</option>
                                 <option value="30">Show 30</option>
@@ -59,7 +59,7 @@ const applyFilter = () => {
 
                 <div class="hidden min-w-24 md:block">
                     <select v-model="filters.numOfData" @change="applyFilter"
-                            class="w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600">
+                        class="w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600">
                         <option value="10">show 10</option>
                         <option value="20">show 20</option>
                         <option value="30">show 30</option>

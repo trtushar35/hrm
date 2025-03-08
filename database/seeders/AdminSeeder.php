@@ -25,7 +25,7 @@ class AdminSeeder extends Seeder
             'email' => 'admin@oms.com',
             'phone' => '01612423280',
             'password' =>'asdasd',
-            'role_id' => 1,
+            'role_id' => 2,
             'photo' => null,
             'address' => 'RDTL Head Office',
             'status' => 'Active',

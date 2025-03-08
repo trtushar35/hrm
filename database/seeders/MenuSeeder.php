@@ -57,20 +57,11 @@ class MenuSeeder extends Seeder
                 'status' => 'Active',
             ],
             [
-                'name' => 'Module Make',
-                'icon' => 'slack',
-                'route' => 'backend.moduleMaker',
-                'description' => null,
-                'sorting' => 1,
-                'permission_name' => 'module maker',
-                'status' => 'Active',
-            ],
-            [
                 'name' => 'User Manage',
                 'icon' => 'user',
                 'route' => null,
                 'description' => null,
-                'sorting' => 1,
+                'sorting' => 3,
                 'permission_name' => 'user-management',
                 'status' => 'Active',
                 'children' => [
@@ -99,7 +90,7 @@ class MenuSeeder extends Seeder
                 'icon' => 'unlock',
                 'route' => null,
                 'description' => null,
-                'sorting' => 1,
+                'sorting' => 4,
                 'permission_name' => 'permission-management',
                 'status' => 'Active',
                 'children' => [
@@ -128,7 +119,7 @@ class MenuSeeder extends Seeder
                 'icon' => 'layers',
                 'route' => null,
                 'description' => null,
-                'sorting' => 1,
+                'sorting' => 5,
                 'permission_name' => 'role-management',
                 'status' => 'Active',
                 'children' => [
@@ -186,7 +177,7 @@ class MenuSeeder extends Seeder
                 'icon' => 'aperture',
                 'route' => null,
                 'description' => null,
-                'sorting' => 6,
+                'sorting' => 7,
                 'permission_name' => 'designation-management',
                 'status' => 'Active',
                 'children' => [
@@ -212,7 +203,38 @@ class MenuSeeder extends Seeder
             ],
 
 
-    //don't remove this comment from menu seeder
+            [
+                'name' => 'Employee Manage',
+                'icon' => 'users',
+                'route' => null,
+                'description' => null,
+                'sorting' => 8,
+                'permission_name' => 'employee-management',
+                'status' => 'Active',
+                'children' => [
+                    [
+                        'name' => 'Employee Add',
+                        'icon' => 'plus-circle',
+                        'route' => 'backend.employee.create',
+                        'description' => null,
+                        'sorting' => 1,
+                        'permission_name' => 'employee-add',
+                        'status' => 'Active',
+                    ],
+                    [
+                        'name' => 'Employee List',
+                        'icon' => 'list',
+                        'route' => 'backend.employee.index',
+                        'description' => null,
+                        'sorting' => 1,
+                        'permission_name' => 'employee-list',
+                        'status' => 'Active',
+                    ],
+                ],
+            ],
+
+
+            //don't remove this comment from menu seeder
         ];
     }
 }
