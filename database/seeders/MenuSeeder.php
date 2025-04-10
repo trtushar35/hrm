@@ -234,7 +234,38 @@ class MenuSeeder extends Seeder
             ],
 
 
-            //don't remove this comment from menu seeder
+                [
+        'name' => 'Attendance Manage',
+        'icon' => 'layers',
+        'route' => null,
+        'description' => null,
+        'sorting' => 1,
+        'permission_name' => 'attendance-management',
+        'status' => 'Active',
+        'children' => [
+            [
+                'name' => 'Attendance Add',
+                'icon' => 'plus-circle',
+                'route' => 'backend.attendance.create',
+                'description' => null,
+                'sorting' => 1,
+                'permission_name' => 'attendance-add',
+                'status' => 'Active',
+            ],
+            [
+                'name' => 'Attendance List',
+                'icon' => 'list',
+                'route' => 'backend.attendance.index',
+                'description' => null,
+                'sorting' => 1,
+                'permission_name' => 'attendance-list',
+                'status' => 'Active',
+            ],
+        ],
+    ],
+
+
+	//don't remove this comment from menu seeder
         ];
     }
 }

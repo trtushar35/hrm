@@ -615,13 +615,11 @@ EOT;
                             ->with('errorMessage', \$message);
                     }
                 } catch (Exception \$err) {
-                    //   dd(\$err);
                     DB::rollBack();
                     \$this->storeSystemError('Backend', '$controller', 'store', substr(\$err->getMessage(), 0, 1000));
-                    //dd(\$err);
+                   
                     DB::commit();
                     \$message = "Server Errors Occur. Please Try Again.";
-                    // dd(\$message);
                     return redirect()
                         ->back()
                         ->with('errorMessage', \$message);

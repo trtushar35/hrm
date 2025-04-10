@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Backend\EmployeeController;
 
 
-//don't remove this comment from route namespace
+
+	//don't remove this comment from route namespace
 
 /*
 |--------------------------------------------------------------------------
@@ -75,6 +76,5 @@ Route::group(['middleware' => 'AdminAuth'], function () {
     Route::resource('employee', EmployeeController::class);
     Route::get('employee/{id}/status/{status}/change', [EmployeeController::class, 'changeStatus'])->name('employee.status.change');
 
-
-    //don't remove this comment from route body
+	//don't remove this comment from route body
 });
