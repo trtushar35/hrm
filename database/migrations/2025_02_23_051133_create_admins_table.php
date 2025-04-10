@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->string('password')->nullable();
             $table->unsignedBigInteger('role_id')->nullable();
+            $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
             $table->string('photo')->nullable();
             $table->string('address',2000)->nullable();
             $table->integer('sorting')->default(1);
@@ -29,7 +30,6 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();
-            $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
          
         });
     }

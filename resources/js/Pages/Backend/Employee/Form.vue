@@ -8,20 +8,24 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import AlertMessage from '@/Components/AlertMessage.vue';
 import { displayResponse, displayWarning } from '@/responseMessage.js';
 
-const props = defineProps(['user', 'id', 'roles', 'departments', 'designations']);
+const props = defineProps(['employee', 'id', 'departments', 'designations']);
 
 const form = useForm({
-    first_name: props.user?.first_name ?? '',
-    last_name: props.user?.last_name ?? '',
-    email: props.user?.email ?? '',
+    first_name: props.employee?.first_name ?? '',
+    last_name: props.employee?.last_name ?? '',
+    email: props.employee?.email ?? '',
     photo: '',
-    photoPreview: props.user?.photo ?? '',
-    phone: props.user?.phone ?? '',
-    role_id: props.user?.role_id ?? '',
-    password: '',
+    photoPreview: props.employee?.photo ?? '',
+    phone: props.employee?.phone ?? '',
+    department_id: props.employee?.department_id ?? '',
+    designation_id: props.employee?.designation_id ?? '',
+    salary: props.employee?.salary ?? '',
+    hiring_date: props.employee?.hiring_date ?? '',
+    joining_date: props.employee?.joining_date ?? '',
+    
 
-    address: props.user?.address ?? '',
-    _method: props.user?.id ? 'put' : 'post',
+    address: props.employee?.address ?? '',
+    _method: props.employee?.id ? 'put' : 'post',
 });
 
 const handlePhotoChange = (event) => {
@@ -37,7 +41,7 @@ const handlePhotoChange = (event) => {
 };
 
 const submit = () => {
-    const routeName = props.id ? route('backend.admin.update', props.id) : route('backend.admin.store');
+    const routeName = props.id ? route('backend.employee.update', props.id) : route('backend.employee.store');
     form.transform(data => ({
         ...data,
         remember: '',
@@ -122,24 +126,53 @@ const submit = () => {
                     </div>
 
                     <div class="col-span-1 md:col-span-1">
-                        <InputLabel for="role_id" value="Role" />
-                        <select id="role_id"
+                        <InputLabel for="department_id" value="Department" />
+                        <select id="department_id"
                             class="block w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600"
-                            v-model="form.role_id" placeholder="Select Role">
-                            <option value="">--Select Role--</option>
-                            <template v-for="role in roles">
-                                <option :value="role.id">{{ role.name }}</option>
+                            v-model="form.department_id" placeholder="Select Department">
+                            <option value="">--Select Department--</option>
+                            <template v-for="data in departments">
+                                <option :value="data.id">{{ data.name }}</option>
                             </template>
                         </select>
-                        <InputError class="mt-2" :message="form.errors.role_id" />
+                        <InputError class="mt-2" :message="form.errors.department_id" />
                     </div>
 
                     <div class="col-span-1 md:col-span-1">
-                        <InputLabel for="password" value="Password" />
-                        <input id="password"
+                        <InputLabel for="designation_id" value="Designation" />
+                        <select id="designation_id"
                             class="block w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600"
-                            v-model="form.password" type="password" placeholder="Password" />
-                        <InputError class="mt-2" :message="form.errors.password" />
+                            v-model="form.designation_id" placeholder="Select Designation">
+                            <option value="">--Select Designation--</option>
+                            <template v-for="data in designations">
+                                <option :value="data.id">{{ data.name }}</option>
+                            </template>
+                        </select>
+                        <InputError class="mt-2" :message="form.errors.designation_id" />
+                    </div>
+
+                    <div class="col-span-1 md:col-span-1">
+                        <InputLabel for="salary" value="Salary" />
+                        <input id="salary"
+                            class="block w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600"
+                            v-model="form.salary" type="number" placeholder="Salary" />
+                        <InputError class="mt-2" :message="form.errors.salary" />
+                    </div>
+
+                    <div class="col-span-1 md:col-span-1">
+                        <InputLabel for="hiring_date" value="Hiring Date" />
+                        <input id="hiring_date"
+                            class="block w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600"
+                            v-model="form.hiring_date" type="date" placeholder="Hiring Date" />
+                        <InputError class="mt-2" :message="form.errors.hiring_date" />
+                    </div>
+
+                    <div class="col-span-1 md:col-span-1">
+                        <InputLabel for="joining_date" value="Joining Date" />
+                        <input id="joining_date"
+                            class="block w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600"
+                            v-model="form.joining_date" type="date" placeholder="Joining Date" />
+                        <InputError class="mt-2" :message="form.errors.joining_date" />
                     </div>
 
                     <div class="col-span-4 md:col-span-4">

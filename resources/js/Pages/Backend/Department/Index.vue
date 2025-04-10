@@ -4,23 +4,18 @@ import BackendLayout from '@/Layouts/BackendLayout.vue';
 import BaseTable from '@/Components/BaseTable.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { router } from '@inertiajs/vue3';
+
 let props = defineProps({
     filters: Object,
-    roles: Array,
-    departments: Array,
-    designations: Array,
 });
 
 const filters = ref({
-    name: props.filters?.name ?? '',
-    email: props.filters?.email ?? '',
-    phone: props.filters?.phone ?? '',
-    role_id: props.filters?.role_id ?? '',
+
     numOfData: props.filters?.numOfData ?? 10,
 });
 
 const applyFilter = () => {
-    router.get(route('backend.admin.index'), filters.value, { preserveState: true });
+    router.get(route('backend.department.index'), filters.value, { preserveState: true });
 };
 
 </script>
@@ -36,11 +31,11 @@ const applyFilter = () => {
             <div
                 class="flex justify-between w-full p-2 py-3 space-x-2 text-gray-700 rounded-md shadow-md bg-slate-300 shadow-gray-800/50 dark:bg-gray-700 dark:text-gray-200">
 
-                <div class="grid w-full grid-cols-1 gap-1 md:grid-cols-5">
+                <div class="grid w-full grid-cols-1 gap-2 md:grid-cols-5">
 
                     <div class="flex space-x-2">
                         <div class="w-full">
-                            <input id="name" v-model="filters.name"
+                            <input id="title_en" v-model="filters.name"
                                 class="block w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600"
                                 type="text" placeholder="Name" @input="applyFilter" />
                         </div>
@@ -58,25 +53,8 @@ const applyFilter = () => {
                             </select>
                         </div>
                     </div>
-                    <div class="">
-                        <input id="phone" v-model="filters.phone"
-                            class="block w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600"
-                            type="text" placeholder="phone" @input="applyFilter" />
-                    </div>
-                    <div class="">
-                        <input id="email" v-model="filters.email"
-                            class="block w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600"
-                            type="text" placeholder="Email" @input="applyFilter" />
-                    </div>
-                    <div class="">
-                        <select v-model="filters.role_id" @change="applyFilter"
-                            class="block w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600">
-                            <option value="">Choose A Role</option>
-                            <template v-for="roleInfo in roles">
-                                <option :value="roleInfo.id">{{ roleInfo.name }}</option>
-                            </template>
-                        </select>
-                    </div>
+
+
                 </div>
 
                 <div class="hidden min-w-24 md:block">

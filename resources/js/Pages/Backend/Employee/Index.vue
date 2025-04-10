@@ -6,7 +6,6 @@ import Pagination from '@/Components/Pagination.vue';
 import { router } from '@inertiajs/vue3';
 let props = defineProps({
     filters: Object,
-    roles: Array,
     departments: Array,
     designations: Array,
 });
@@ -15,12 +14,13 @@ const filters = ref({
     name: props.filters?.name ?? '',
     email: props.filters?.email ?? '',
     phone: props.filters?.phone ?? '',
-    role_id: props.filters?.role_id ?? '',
+    department_id: props.filters?.department_id ?? '',
+    designation_id: props.filters?.designation_id ?? '',
     numOfData: props.filters?.numOfData ?? 10,
 });
 
 const applyFilter = () => {
-    router.get(route('backend.admin.index'), filters.value, { preserveState: true });
+    router.get(route('backend.employee.index'), filters.value, { preserveState: true });
 };
 
 </script>
@@ -69,11 +69,20 @@ const applyFilter = () => {
                             type="text" placeholder="Email" @input="applyFilter" />
                     </div>
                     <div class="">
-                        <select v-model="filters.role_id" @change="applyFilter"
+                        <select v-model="filters.department_id" @change="applyFilter"
                             class="block w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600">
-                            <option value="">Choose A Role</option>
-                            <template v-for="roleInfo in roles">
-                                <option :value="roleInfo.id">{{ roleInfo.name }}</option>
+                            <option value="">Choose A Department</option>
+                            <template v-for="data in departments">
+                                <option :value="data.id">{{ data.name }}</option>
+                            </template>
+                        </select>
+                    </div>
+                    <div class="">
+                        <select v-model="filters.designation_id" @change="applyFilter"
+                            class="block w-full p-2 text-sm rounded-md shadow-sm border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200 focus:border-indigo-300 dark:focus:border-slate-600">
+                            <option value="">Choose A Desigantion</option>
+                            <template v-for="data in designations">
+                                <option :value="data.id">{{ data.name }}</option>
                             </template>
                         </select>
                     </div>

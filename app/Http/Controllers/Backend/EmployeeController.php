@@ -3,51 +3,54 @@
 namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\AdminRequest;
-use App\Http\Requests\UserRequest;
-use Illuminate\Support\Facades\DB;
-use App\Services\AdminService;
+use App\Http\Requests\EmployeeRequest;
 use App\Services\DepartmentService;
 use App\Services\DesignationService;
-use App\Services\RoleService;
+use Illuminate\Support\Facades\DB;
+use App\Services\EmployeeService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use App\Traits\SystemTrait;
 use Exception;
 
-class AdminController extends Controller
+class EmployeeController extends Controller
 {
     use SystemTrait;
 
-    protected $adminService, $roleService;
+    protected $employeeService, $departmentService, $designationService;
 
-    public function __construct(AdminService $adminService, RoleService $roleService)
+    public function __construct(EmployeeService $employeeService, DepartmentService $departmentService, DesignationService $designationService)
     {
-        $this->adminService = $adminService;
-        $this->roleService = $roleService;
+        $this->employeeService = $employeeService;
+        $this->departmentService = $departmentService;
+        $this->designationService = $designationService;
     }
 
     public function index()
     {
         return Inertia::render(
-            'Backend/Admin/Index',
+            'Backend/Employee/Index',
             [
-                'pageTitle' => fn() => 'User List',
+                'pageTitle' => fn() => 'Employee List',
                 'breadcrumbs' => fn() => [
-                    ['link' => null, 'title' => 'User Manage'],
-                    ['link' => route('backend.admin.index'), 'title' => 'User List'],
+                    ['link' => null, 'title' => 'Employee Manage'],
+                    ['link' => route('backend.employee.index'), 'title' => 'Employee List'],
                 ],
                 'tableHeaders' => fn() => $this->getTableHeaders(),
                 'dataFields' => fn() => $this->dataFields(),
                 'datas' => fn() => $this->getDatas(),
-                'roles' => fn() => $this->roleService->all(),
                 'filters' => request()->only(['numOfData', 'name', 'division', 'district', 'upazila', 'union']),
+                'departments' => fn() => $this->departmentService->activeList(),
+                'designations' => fn() => $this->designationService->activeList()
             ]
         );
     }
 
     private function getDatas()
     {
-        $query = $this->adminService->list()->with('role');
+        $query = $this->employeeService->list();
 
         if (request()->filled('name')) {
             $query->where(function ($q) {
@@ -62,8 +65,11 @@ class AdminController extends Controller
         if (request()->filled('email'))
             $query->where('email', 'like', request()->email . '%');
 
-        if (request()->filled('role_id'))
-            $query->where('role_id', request()->role_id);
+        if (request()->filled('department_id'))
+            $query->where('department_id', request()->department_id);
+
+        if (request()->filled('designation_id'))
+            $query->where('designation_id', request()->designation_id);
 
         $datas = $query->paginate(request()->numOfData ?? 10)->withQueryString();
 
@@ -73,7 +79,9 @@ class AdminController extends Controller
             $customData->name = $data->name;
             $customData->email = $data->email;
             $customData->phone = $data->phone;
-            $customData->role_name = $data->role?->name;
+            $customData->department_id = $data->department?->name;
+            $customData->designation_id = $data->designation?->name;
+            $customData->salary = $data->salary;
             $customData->photo = '<img src="' . $data->photo . '" height="50" width="50"/>';
             $customData->address = $data->address;
             $customData->status = getStatusText($data->status);
@@ -82,17 +90,17 @@ class AdminController extends Controller
             $customData->links = [
                 [
                     'linkClass' => 'semi-bold text-white statusChange ' . (($data->status == 'Active') ? "bg-gray-500" : "bg-green-500"),
-                    'link' => route('backend.admin.status.change', ['id' => $data->id, 'status' => $data->status == 'Active' ? 'Inactive' : 'Active']),
+                    'link' => route('backend.employee.status.change', ['id' => $data->id, 'status' => $data->status == 'Active' ? 'Inactive' : 'Active']),
                     'linkLabel' => getLinkLabel((($data->status == 'Active') ? "Inactive" : "Active"), null, null)
                 ],
                 [
                     'linkClass' => 'bg-yellow-400 text-black semi-bold',
-                    'link' => route('backend.admin.edit',  $data->id),
+                    'link' => route('backend.employee.edit',  $data->id),
                     'linkLabel' => getLinkLabel('Edit', null, null)
                 ],
                 [
                     'linkClass' => 'deleteButton bg-red-500 text-white semi-bold',
-                    'link' => route('backend.admin.destroy', $data->id),
+                    'link' => route('backend.employee.destroy', $data->id),
                     'linkLabel' => getLinkLabel('Delete', null, null)
                 ]
 
@@ -112,7 +120,9 @@ class AdminController extends Controller
             ['fieldName' => 'email', 'class' => 'text-center'],
             ['fieldName' => 'phone', 'class' => 'text-center'],
             ['fieldName' => 'address', 'class' => 'text-center'],
-            ['fieldName' => 'role_name', 'class' => 'text-center'],
+            ['fieldName' => 'department_id', 'class' => 'text-center'],
+            ['fieldName' => 'designation_id', 'class' => 'text-center'],
+            ['fieldName' => 'salary', 'class' => 'text-center'],
             ['fieldName' => 'status', 'class' => 'text-center'],
         ];
     }
@@ -125,7 +135,9 @@ class AdminController extends Controller
             'Email',
             'Phone',
             'Address',
-            'Role',
+            'Department',
+            'Designation',
+            'Salary',
             'Status',
             'Action',
         ];
@@ -134,19 +146,20 @@ class AdminController extends Controller
     public function create()
     {
         return Inertia::render(
-            'Backend/Admin/Form',
+            'Backend/Employee/Form',
             [
-                'pageTitle' => fn() => 'User Create',
+                'pageTitle' => fn() => 'Employee Create',
                 'breadcrumbs' => fn() => [
-                    ['link' => null, 'title' => 'User Manage'],
-                    ['link' => route('backend.admin.create'), 'title' => 'User Create'],
+                    ['link' => null, 'title' => 'Employee Manage'],
+                    ['link' => route('backend.employee.create'), 'title' => 'Employee Create'],
                 ],
-                'roles' => fn() => $this->roleService->all(),
+                'departments' => fn() => $this->departmentService->activeList(),
+                'designations' => fn() => $this->designationService->activeList(),
             ]
         );
     }
 
-    public function store(AdminRequest $request)
+    public function store(EmployeeRequest $request)
     {
         DB::beginTransaction();
         try {
@@ -154,13 +167,13 @@ class AdminController extends Controller
             $data = $request->validated();
 
             if ($request->hasFile('photo'))
-                $data['photo'] = $this->imageUpload($request->file('photo'), 'users');
+                $data['photo'] = $this->imageUpload($request->file('photo'), 'Employees');
 
-            $dataInfo = $this->adminService->create($data);
+            $dataInfo = $this->employeeService->create($data);
 
             if ($dataInfo) {
-                $message = 'User created successfully';
-                $this->storeAdminWorkLog($dataInfo->id, 'admins', $message);
+                $message = 'Employee created successfully';
+                $this->storeAdminWorkLog($dataInfo->id, 'employees', $message);
 
                 DB::commit();
 
@@ -170,14 +183,14 @@ class AdminController extends Controller
             } else {
                 DB::rollBack();
 
-                $message = "Failed To create user.";
+                $message = "Failed To create Employee.";
                 return redirect()
                     ->back()
                     ->with('errorMessage', $message);
             }
         } catch (Exception $err) {
             DB::rollBack();
-            $this->storeSystemError('Backend', 'AdminController', 'store', substr($err->getMessage(), 0, 1000));
+            $this->storeSystemError('Backend', 'EmployeeController', 'store', substr($err->getMessage(), 0, 1000));
             DB::commit();
             $message = "Server Errors Occur. Please Try Again.";
             return redirect()
@@ -188,32 +201,33 @@ class AdminController extends Controller
 
     public function edit($id)
     {
-        $user = $this->adminService->find($id);
+        $Employee = $this->employeeService->find($id);
 
         return Inertia::render(
-            'Backend/Admin/Form',
+            'Backend/Employee/Form',
             [
-                'pageTitle' => fn() => 'User Edit',
+                'pageTitle' => fn() => 'Employee Edit',
                 'breadcrumbs' => fn() => [
-                    ['link' => null, 'title' => 'User Manage'],
-                    ['link' => route('backend.admin.edit', $user->id), 'title' => 'Branch Edit'],
+                    ['link' => null, 'title' => 'Employee Manage'],
+                    ['link' => route('backend.employee.edit', $Employee->id), 'title' => 'Employee Edit'],
                 ],
-                'user' => fn() => $user,
+                'employee' => fn() => $Employee,
                 'id' => fn() => $id,
-                'roles' => fn() => $this->roleService->all(),
+                'departments' => fn() => $this->departmentService->activeList(),
+                'designations' => fn() => $this->designationService->activeList(),
             ]
         );
     }
 
-    public function update(AdminRequest $request, $id)
+    public function update(EmployeeRequest $request, $id)
     {
         DB::beginTransaction();
         try {
-            $admin = $this->adminService->find($id);
+            $admin = $this->employeeService->find($id);
             $data = $request->validated();
 
             if ($request->hasFile('photo')) {
-                $data['photo'] = $this->imageUpload($request->file('photo'), 'users');
+                $data['photo'] = $this->imageUpload($request->file('photo'), 'Employees');
                 if (isset($admin->photo)) {
                     $path = strstr($admin->photo, 'storage/');
                     if (file_exists($path)) {
@@ -221,13 +235,13 @@ class AdminController extends Controller
                     }
                 }
             } else {
-                $data['photo'] = strstr($admin->photo, 'users/'); //remove text before specified text
+                $data['photo'] = strstr($admin->photo, 'Employees/');
             }
 
-            $dataInfo = $this->adminService->update($data, $id);
+            $dataInfo = $this->employeeService->update($data, $id);
             if ($dataInfo->wasChanged()) {
-                $message = 'User updated successfully';
-                $this->storeAdminWorkLog($dataInfo->id, 'admins', $message);
+                $message = 'Employee updated successfully';
+                $this->storeAdminWorkLog($dataInfo->id, 'employees', $message);
 
                 DB::commit();
 
@@ -237,14 +251,14 @@ class AdminController extends Controller
             } else {
                 DB::rollBack();
 
-                $message = "Failed To update Branch.";
+                $message = "Failed To update Employee.";
                 return redirect()
                     ->back()
                     ->with('errorMessage', $message);
             }
         } catch (Exception $err) {
             DB::rollBack();
-            $this->storeSystemError('Backend', 'AdminController', 'update', substr($err->getMessage(), 0, 1000));
+            $this->storeSystemError('Backend', 'EmployeeController', 'update', substr($err->getMessage(), 0, 1000));
             DB::commit();
             $message = "Server Errors Occur. Please Try Again.";
             return redirect()
@@ -259,11 +273,11 @@ class AdminController extends Controller
         DB::beginTransaction();
 
         try {
-            $dataInfo = $this->adminService->delete($id);
+            $dataInfo = $this->employeeService->delete($id);
 
             if ($dataInfo) {
-                $message = 'User deleted successfully';
-                $this->storeAdminWorkLog($dataInfo->id, 'admins', $message);
+                $message = 'Employee deleted successfully';
+                $this->storeAdminWorkLog($dataInfo->id, 'employees', $message);
 
                 DB::commit();
 
@@ -273,14 +287,14 @@ class AdminController extends Controller
             } else {
                 DB::rollBack();
 
-                $message = "Failed To Delete User.";
+                $message = "Failed To Delete Employee.";
                 return redirect()
                     ->back()
                     ->with('errorMessage', $message);
             }
         } catch (Exception $err) {
             DB::rollBack();
-            $this->storeSystemError('Backend', 'AdminController', 'destroy', substr($err->getMessage(), 0, 1000));
+            $this->storeSystemError('Backend', 'EmployeeController', 'destroy', substr($err->getMessage(), 0, 1000));
             DB::commit();
             $message = "Server Errors Occur. Please Try Again.";
             return redirect()
@@ -294,11 +308,11 @@ class AdminController extends Controller
         DB::beginTransaction();
 
         try {
-            $dataInfo = $this->adminService->changeStatus(request());
+            $dataInfo = $this->employeeService->changeStatus(request());
 
             if ($dataInfo) {
-                $message = 'User ' . request()->status . ' Successfully';
-                $this->storeAdminWorkLog($dataInfo->id, 'admins', $message);
+                $message = 'Employee ' . request()->status . ' Successfully';
+                $this->storeAdminWorkLog($dataInfo->id, 'employees', $message);
 
                 DB::commit();
 
@@ -308,14 +322,14 @@ class AdminController extends Controller
             } else {
                 DB::rollBack();
 
-                $message = "Failed To " . request()->status . " User.";
+                $message = "Failed To " . request()->status . " Employee.";
                 return redirect()
                     ->back()
                     ->with('errorMessage', $message);
             }
         } catch (Exception $err) {
             DB::rollBack();
-            $this->storeSystemError('Backend', 'AdminController', 'changeStatus', substr($err->getMessage(), 0, 1000));
+            $this->storeSystemError('Backend', 'EmployeeController', 'changeStatus', substr($err->getMessage(), 0, 1000));
             DB::commit();
             $message = "Server Errors Occur. Please Try Again.";
             return redirect()

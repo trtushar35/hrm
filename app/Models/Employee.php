@@ -9,31 +9,28 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Traits\HasRoles;
 
-class Admin extends Authenticatable
+class Employee extends Authenticatable
 {
-    use  Notifiable, HasFactory, HasRoles;
+    use Notifiable, HasFactory;
 
-    protected $table = 'admins';
+    protected $table = 'employees';
 
     protected $fillable = [
         'first_name',
         'last_name',
         'email',
         'phone',
-        'password',
-        'role_id',
         'photo',
         'address',
         'sorting',
+        'hiring_date',
+        'joining_date',
+        'department_id',
+        'designation_id',
+        'salary',
         'status',
     ];
 
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    protected $appends = ['name'];
     protected static function boot()
     {
         parent::boot();
@@ -46,21 +43,23 @@ class Admin extends Authenticatable
         });
     }
 
-    public function role()
-    {
-        return $this->belongsTo(Role::class, 'role_id');
-    }
-
-    public function getNameAttribute()
-    {
-        return $this->first_name . ' ' . $this->last_name;
-    }
     public function getPhotoAttribute($value)
     {
         return (!is_null($value)) ? env('APP_URL') . '/storage/' . $value : null;
     }
-    public function setPasswordAttribute($password)
+    
+    public function getNameAttribute()
     {
-        $this->attributes['password'] = bcrypt($password);
+        return $this->first_name . ' ' . $this->last_name;
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class, 'department_id', 'id');
+    }
+    
+    public function designation()
+    {
+        return $this->belongsTo(Designation::class, 'designation_id', 'id');
     }
 }

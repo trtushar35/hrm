@@ -2,12 +2,17 @@
 
 use App\Http\Controllers\Backend\AdminController;
 use App\Http\Controllers\Backend\DashboardController;
+use App\Http\Controllers\Backend\DepartmentController;
+use App\Http\Controllers\Backend\DesignationController;
 use App\Http\Controllers\Backend\ModuleMakerController;
 use App\Http\Controllers\Backend\PermissionController;
 use App\Http\Controllers\Backend\RoleController;
 use App\Http\Controllers\LoginController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\Backend\EmployeeController;
+
 
 //don't remove this comment from route namespace
 
@@ -48,8 +53,7 @@ Route::group(['middleware' => 'AdminAuth'], function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::match(['get', 'post'], '/module-make', [ModuleMakerController::class, 'index'])->name('moduleMaker');
-
+    //for admin
     Route::resource('admin', AdminController::class);
     Route::get('admin/{id}/status/{status}/change', [AdminController::class, 'changeStatus'])->name('admin.status.change');
 
@@ -59,5 +63,18 @@ Route::group(['middleware' => 'AdminAuth'], function () {
     // for permission entry
     Route::resource('permission', PermissionController::class);
 
-	//don't remove this comment from route body
+    //for department
+    Route::resource('department', DepartmentController::class);
+    Route::get('department/{id}/status/{status}/change', [DepartmentController::class, 'changeStatus'])->name('department.status.change');
+
+    //for designation
+    Route::resource('designation', DesignationController::class);
+    Route::get('designation/{id}/status/{status}/change', [DesignationController::class, 'changeStatus'])->name('designation.status.change');
+
+    //for Employee
+    Route::resource('employee', EmployeeController::class);
+    Route::get('employee/{id}/status/{status}/change', [EmployeeController::class, 'changeStatus'])->name('employee.status.change');
+
+
+    //don't remove this comment from route body
 });
